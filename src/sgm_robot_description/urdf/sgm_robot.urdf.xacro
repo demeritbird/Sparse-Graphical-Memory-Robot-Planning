@@ -194,6 +194,33 @@
         <origin xyz="${base_length / 8} 0 ${base_height}" rpy="0 0 0" />
     </joint>
 
+
+    <gazebo reference="base_link">
+        <material>Gazebo/Blue</material>
+    </gazebo>
+
+    <gazebo reference="right_wheel_link">
+        <material>Gazebo/Grey</material>
+    </gazebo>
+
+    <gazebo reference="left_wheel_link">
+        <material>Gazebo/Grey</material>
+    </gazebo>
+
+    <gazebo reference="caster_wheel_link">
+        <material>Gazebo/Grey</material>
+        <mu1 value="0.1" />
+        <mu2 value="0.1" />
+    </gazebo>
+
+    <gazebo reference="laser_link">
+        <material>Gazebo/Grey</material>
+    </gazebo>
+    
+    <gazebo reference="camera_link">
+        <material>Gazebo/Grey</material>
+    </gazebo>
+
     <gazebo>
         <plugin name="diff_drive_controller" filename="libgazebo_ros_diff_drive.so">
             <update_rate>50</update_rate>

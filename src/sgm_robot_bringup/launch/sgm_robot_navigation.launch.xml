@@ -1,0 +1,3 @@
+<launch>
+  <node pkg="sgm_robot_navigation" exec="robot_controller_server" />
+</launch>

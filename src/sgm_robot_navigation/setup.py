@@ -20,7 +20,8 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            "robot_controller_server = sgm_robot_navigation.robot_controller_server:main"
+            "robot_controller_server = sgm_robot_navigation.robot_controller_server:main",
+            "marker_points_node = sgm_robot_navigation.marker_points_node:main"
         ],
     },
 )

@@ -36,8 +36,8 @@ class MarkerPointsNode(Node):
         
     def get_map_info_callback(self, msg):    
         # map dimensions
-        self.map_height = msg.info.height * msg.info.resolution
-        self.map_width = msg.info.width * msg.info.resolution
+        self.map_height = msg.info.height
+        self.map_width = msg.info.width
 
         self.get_logger().info(f"Map Width: {self.map_height}, Map Height: {self.map_width}")
         
@@ -47,6 +47,7 @@ class MarkerPointsNode(Node):
         ## NOTE: for testing purposes, save image
         map_image = (self.map_data * 255 / 100).astype(np.uint8)  # Scale occupancy values to 0-255
         cv2.imwrite('output/occupancy_grid_map.png', map_image)
+        np.save('map_data.npy', self.map_data)          
 
     def publish_markers(self):
         marker_msgs = []

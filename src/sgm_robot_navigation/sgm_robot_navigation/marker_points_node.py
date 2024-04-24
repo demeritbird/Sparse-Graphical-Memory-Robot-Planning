@@ -5,6 +5,9 @@ from visualization_msgs.msg import Marker
 from nav_msgs.msg import OccupancyGrid
 from rclpy.qos import QoSProfile, QoSHistoryPolicy, QoSReliabilityPolicy, QoSDurabilityPolicy
 
+import numpy as np
+import cv2
+
 class MarkerPointsNode(Node):
     def __init__(self):
         super().__init__('marker_points_node')
@@ -13,6 +16,7 @@ class MarkerPointsNode(Node):
         
         self.map_height = 0
         self.map_width = 0
+        self.map_data = [] # int8[]
         
         self.marker_publisher_ = self.create_publisher(Marker, 'visualization_marker', 5)
         self.timer_ = self.create_timer(1.0, self.publish_markers) 
@@ -31,10 +35,18 @@ class MarkerPointsNode(Node):
         )
         
     def get_map_info_callback(self, msg):    
+        # map dimensions
         self.map_height = msg.info.height * msg.info.resolution
         self.map_width = msg.info.width * msg.info.resolution
 
         self.get_logger().info(f"Map Width: {self.map_height}, Map Height: {self.map_width}")
+        
+        # map wall information (walls -> 100, empty -> 0)
+        self.map_data = np.array(msg.data).reshape((msg.info.height, msg.info.width))
+        
+        ## NOTE: for testing purposes, save image
+        map_image = (self.map_data * 255 / 100).astype(np.uint8)  # Scale occupancy values to 0-255
+        cv2.imwrite('output/occupancy_grid_map.png', map_image)
 
     def publish_markers(self):
         marker_msgs = []

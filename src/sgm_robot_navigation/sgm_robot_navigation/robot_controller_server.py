@@ -56,9 +56,22 @@ class RobotControllerServer(Node):
             
             # Validating the Goal Request -> must be within sparse-node range
             if goal_request.target_node < 0 or goal_request.target_node > len(self.marker_nodes_information) - 1:
-                    self.get_logger().info("Rejecting the Goal")
-                    return GoalResponse.REJECT
-            
+                self.get_logger().info("Rejecting the Goal")
+                return GoalResponse.REJECT
+
+            target_node = goal_request.target_node
+            target_nodes_to_travel = self.get_path_of_nodes_to_travel(self.current_vehicle_node, target_node)
+
+            if target_nodes_to_travel == None:
+                self.get_logger().warn("Rejecting the Goal")
+                return GoalResponse.REJECT
+
+            for node_idx in target_nodes_to_travel:
+                # get node position as (x, y)
+                for node_info in self.marker_nodes_information:
+                    if node_info.index == node_idx:
+                        self.nodes_to_travel.append(node_info)
+              
             self.get_logger().info("Accepting the Goal")
             return GoalResponse.ACCEPT
      

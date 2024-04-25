@@ -11,12 +11,14 @@ from rclpy.callback_groups import ReentrantCallbackGroup
 
 import math
 import numpy as np
+from collections import deque
 
 class RobotControllerServer(Node):
     def __init__(self):
         super().__init__("robot_controller_server")
         self.current_vehicle_x = 6.81  # TODO: get this dynamically
         self.current_vehicle_y = 18.3  # TODO: get this dynamically
+        self.current_vehicle_node = -1
         self.get_logger().info("Robot Controller Server has started.")
         self.velocity_publisher_ = self.create_publisher(Twist, "/cmd_vel", 10)
         self.current_node_index = -1
@@ -103,15 +105,44 @@ class RobotControllerServer(Node):
 
         self.move_vehicle_bwt_two_nodes((self.current_vehicle_x,self.current_vehicle_y), 
                                         (self.marker_nodes_information[nearest_node_idx].position_x, self.marker_nodes_information[nearest_node_idx].position_y))
+        self.current_vehicle_node = nearest_node_idx
 
+    # FIXME: this should done in marker_points_node as a server? 
+    def get_path_of_nodes_to_travel(self, starting_node_idx, target_node_idx):
+        '''
+        perform BFS-Dijkstra (for now) and find the nodes that one must travel to get to destination node
+        '''
+
+        distances = {idx: float('inf') for idx in range(len(self.marker_nodes_information))}
+        distances[starting_node_idx] = 0
+
+        queue = deque([(starting_node_idx, [])])
+
+        while queue:
+            current_node_idx, path = queue.popleft()
+            if current_node_idx == target_node_idx:
+                return path + [current_node_idx]  
+            for connected_node_idx in self.marker_nodes_information[current_node_idx].connected_nodes:
+                # find distance
+                distance_to_connected_node = distances[current_node_idx] + self.calculate_euclidean_distance(np.array((self.marker_nodes_information[current_node_idx].position_x, self.marker_nodes_information[current_node_idx].position_y)),
+                                                                                                            np.array((self.marker_nodes_information[connected_node_idx].position_x, self.marker_nodes_information[connected_node_idx].position_y)))
+                
+                # update lowest distance if needed
+                if distance_to_connected_node < distances[connected_node_idx]:
+                    distances[connected_node_idx] = distance_to_connected_node
+                    queue.append((connected_node_idx, path + [current_node_idx]))
+        # return None if no possible path found
+        # TODO: this should actually just return sth to be caught ltr one
+        return None
+    
+    def calculate_euclidean_distance(self, node1, node2):
+        return np.linalg.norm(node1 - node2)
+    
     def find_nearest_node(self, point, sparse_nodes):
-        def calculate_euclidean_distance(node1, node2):
-            return np.linalg.norm(node1 - node2)
-        
         min_distance = float('inf')
         nearest_node_idx = None
         for idx, node in enumerate(sparse_nodes):
-            distance = calculate_euclidean_distance(np.array(point), np.array([node.position_x, node.position_y]))
+            distance = self.calculate_euclidean_distance(np.array(point), np.array([node.position_x, node.position_y]))
             if distance < min_distance:
                 min_distance = distance
                 nearest_node_idx = node.index
@@ -119,19 +150,12 @@ class RobotControllerServer(Node):
         
     def timer_callback(self):
         #TODO:  find route to travel
-        self.nodes_to_travel = [(1,2), (3,5), (1,2), (3,5), (1,2), (3,5)]
-        if self.current_node_index == 2:
-            self.get_logger().info("end of loop")
-            self.nodes_to_travel = []
-            self.current_node_index = 0
-            
-            return
         
-        if not self.timer_callback_called and self.current_node_index + 1 < len(self.marker_nodes_information):
+        if not self.timer_callback_called and self.current_node_index + 1 < len(self.nodes_to_travel):
             self.timer_callback_called = True
-            self.move_vehicle_bwt_two_nodes((self.marker_nodes_information[self.current_node_index].position_x, self.marker_nodes_information[self.current_node_index].position_y), 
-                                            (self.marker_nodes_information[self.current_node_index + 1].position_x, self.marker_nodes_information[self.current_node_index + 1].position_y))
-        elif self.current_node_index + 1 >= len(self.marker_nodes_information):
+            self.move_vehicle_bwt_two_nodes((self.nodes_to_travel[self.current_node_index].position_x, self.nodes_to_travel[self.current_node_index].position_y), 
+                                            (self.nodes_to_travel[self.current_node_index + 1].position_x, self.nodes_to_travel[self.current_node_index + 1].position_y))
+        elif self.current_node_index + 1 >= len(self.nodes_to_travel):
             self.get_logger().info("end of loop")
             self.nodes_to_travel = []
             self.current_node_index = 0

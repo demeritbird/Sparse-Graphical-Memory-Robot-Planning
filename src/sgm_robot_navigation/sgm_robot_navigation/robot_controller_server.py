@@ -4,6 +4,7 @@ from geometry_msgs.msg import Twist, Vector3
 from sgm_robot_interfaces.msg import MarkerNode, MapInformation
 
 import math
+import numpy as np
 
 class RobotControllerServer(Node):
     def __init__(self):
@@ -24,7 +25,7 @@ class RobotControllerServer(Node):
         
         self.rotate_timer_ = None
         self.advance_timer_ = None
-        self.velocity_timer_ = self.create_timer(0.5, self.timer_callback)
+        # self.velocity_timer_ = self.create_timer(0.5, self.timer_callback)
         
         self.marker_nodes_subscriber = self.create_subscription(
             MapInformation,
@@ -39,8 +40,24 @@ class RobotControllerServer(Node):
         self.get_logger().info(f"info: {msg}")
         self.marker_nodes_information = msg.marker_nodes
         
-        # TODO: with this information we should i guess move the robot to the nearest node?
+        nearest_node_idx = self.find_nearest_node((self.robot_initial_x,self.robot_initial_y), self.marker_nodes_information)
+        self.get_logger().info(f"nearest node is {nearest_node_idx}")
+
+        self.move_vehicle_bwt_two_nodes((self.robot_initial_x,self.robot_initial_y), 
+                                        (self.marker_nodes_information[nearest_node_idx].position_x, self.marker_nodes_information[nearest_node_idx].position_y))
+    
+    def find_nearest_node(self, point, sparse_nodes):
+        def calculate_euclidean_distance(node1, node2):
+            return np.linalg.norm(node1 - node2)
         
+        min_distance = float('inf')
+        nearest_node_idx = None
+        for idx, node in enumerate(sparse_nodes):
+            distance = calculate_euclidean_distance(np.array(point), np.array([node.position_x, node.position_y]))
+            if distance < min_distance:
+                min_distance = distance
+                nearest_node_idx = node.index
+        return nearest_node_idx
         
     def timer_callback(self):
         if not self.timer_callback_called and self.current_node_index + 1 < len(self.nodes):

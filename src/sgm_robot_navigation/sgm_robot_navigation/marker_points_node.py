@@ -75,8 +75,6 @@ class MarkerPointsNode(Node):
             marker_msg.pose.position.y = info['position'][1] * self.map_height_ * self.map_resolution_
             marker_msg.pose.position.z = 0.5 
             
-            self.get_logger().info(f"x: {marker_msg.pose.position.x}")
-            
             # orientation
             marker_msg.pose.orientation.x = 0.0
             marker_msg.pose.orientation.y = 0.0

@@ -47,7 +47,7 @@ class MarkerPointsNode(Node):
         ## NOTE: for testing purposes, save image
         map_image = (self.map_data * 255 / 100).astype(np.uint8)  # Scale occupancy values to 0-255
         cv2.imwrite('output/occupancy_grid_map.png', map_image)
-        np.save('map_data.npy', self.map_data)          
+        np.save('simplified_sgm/map_data.npy', self.map_data)          
 
     def publish_markers(self):
         marker_msgs = []

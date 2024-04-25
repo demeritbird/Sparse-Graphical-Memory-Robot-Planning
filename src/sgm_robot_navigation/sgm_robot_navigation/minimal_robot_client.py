@@ -12,7 +12,7 @@ class MinimalRobotClient(Node):
     def __init__(self):
         super().__init__("minimal_robot_client")
         self.minimal_robot_client = ActionClient(self, RobotNavigate, "robot_navigate")
-        self.request_timer_ = self.create_timer(30.0, lambda: self.send_goal(4))
+        self.request_timer_ = self.create_timer(90.0, lambda: self.send_goal(4))
         
     def send_goal(self, target_node):
         # Wait for the Server

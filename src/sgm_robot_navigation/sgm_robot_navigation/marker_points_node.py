@@ -3,7 +3,7 @@ import rclpy
 from rclpy.node import Node
 from visualization_msgs.msg import Marker
 from nav_msgs.msg import OccupancyGrid
-from sgm_robot_interfaces.msg import MarkerNode, MarkerNodeArray
+from sgm_robot_interfaces.msg import MarkerNode, MapInformation
 from rclpy.qos import QoSProfile, QoSHistoryPolicy, QoSReliabilityPolicy, QoSDurabilityPolicy
 
 import numpy as np
@@ -26,7 +26,7 @@ class MarkerPointsNode(Node):
                 
         self.nodes_information_ = {}
         self.marker_visualisation_publisher_ = self.create_publisher(Marker, 'visualization_marker', 5)
-        self.marker_information_publisher_ = self.create_publisher(MarkerNodeArray, 'marker_nodes', 5)
+        self.marker_information_publisher_ = self.create_publisher(MapInformation, 'sgm_map', 5)
         self.marker_timer_ = self.create_timer(1.0, self.init_marker_nodes) 
         
         self.map_qos_profile_ = QoSProfile(
@@ -108,17 +108,20 @@ class MarkerPointsNode(Node):
             return
 
         # there is node information, i want to publish it out there
-        marker_node_array = MarkerNodeArray()
+        map_information = MapInformation()
+        map_information.map_height = self.map_height_
+        map_information.map_width = self.map_width_
+        map_information.map_resolution = self.map_resolution_        
         for idx, info in self.nodes_information_.items():
             node_info = MarkerNode(index=idx, 
                                    position_x = info['position'][0] * self.map_width_ * self.map_resolution_,
                                    position_y = info['position'][1] * self.map_height_ * self.map_resolution_,
                                    connected_nodes = (info.get('connected_nodes_green', []) + info.get('connected_nodes_orange', [])))
-                         
-            marker_node_array.marker_nodes.append(node_info)
+        
+            map_information.marker_nodes.append(node_info)
 
         self.get_logger().info("Publishing node information to be captured...")
-        self.marker_information_publisher_.publish(marker_node_array)
+        self.marker_information_publisher_.publish(map_information)
 
     def init_marker_nodes(self):
         def calculate_euclidean_distance(node1, node2):

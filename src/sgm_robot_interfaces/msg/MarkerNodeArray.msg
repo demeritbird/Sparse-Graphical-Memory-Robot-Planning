@@ -1,1 +1,0 @@
-MarkerNode[] marker_nodes

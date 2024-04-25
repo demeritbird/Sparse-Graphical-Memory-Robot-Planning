@@ -1,6 +1,8 @@
 import rclpy
 from rclpy.node import Node
 from geometry_msgs.msg import Twist, Vector3
+from sgm_robot_interfaces.msg import MarkerNode, MapInformation
+
 import math
 
 class RobotControllerServer(Node):
@@ -23,6 +25,22 @@ class RobotControllerServer(Node):
         self.rotate_timer_ = None
         self.advance_timer_ = None
         self.velocity_timer_ = self.create_timer(0.5, self.timer_callback)
+        
+        self.marker_nodes_subscriber = self.create_subscription(
+            MapInformation,
+            'sgm_map',
+            self.get_marker_nodes_information_callback,
+            10
+        )
+        self.marker_nodes_information = []
+        
+    def get_marker_nodes_information_callback(self, msg):
+        # grab information about the nodes when we the map and markers spawn
+        self.get_logger().info(f"info: {msg}")
+        self.marker_nodes_information = msg.marker_nodes
+        
+        # TODO: with this information we should i guess move the robot to the nearest node?
+        
         
     def timer_callback(self):
         if not self.timer_callback_called and self.current_node_index + 1 < len(self.nodes):

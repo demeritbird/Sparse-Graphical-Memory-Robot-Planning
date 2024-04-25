@@ -13,7 +13,7 @@ find_package(rosidl_default_generators REQUIRED)
 
 rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/MarkerNode.msg"
-  "msg/MarkerNodeArray.msg"  # Add this line
+  "msg/MapInformation.msg"
 )
 
 ament_export_dependencies(rosidl_default_runtime)

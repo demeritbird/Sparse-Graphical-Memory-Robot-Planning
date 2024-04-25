@@ -21,7 +21,8 @@ setup(
     entry_points={
         'console_scripts': [
             "robot_controller_server = sgm_robot_navigation.robot_controller_server:main",
-            "marker_points_node = sgm_robot_navigation.marker_points_node:main"
+            "minimal_robot_client = sgm_robot_navigation.minimal_robot_client:main",
+            "marker_points_node = sgm_robot_navigation.marker_points_node:main",
         ],
     },
 )

@@ -1,0 +1,10 @@
+# Goal
+int64 target_node
+---
+# Result
+int64 result_node
+float64 time_taken
+---
+# Feedback
+int64 outgoing_node
+int64 incoming_node

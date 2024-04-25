@@ -9,12 +9,12 @@ import numpy as np
 class RobotControllerServer(Node):
     def __init__(self):
         super().__init__("robot_controller_server")
-        self.robot_initial_x = 6.81  # TODO: get this dynamically
-        self.robot_initial_y = 18.3  # TODO: get this dynamically
+        self.current_vehicle_x = 6.81  # TODO: get this dynamically
+        self.current_vehicle_y = 18.3  # TODO: get this dynamically
         self.get_logger().info("Robot Controller Server has started.")
         self.velocity_publisher_ = self.create_publisher(Twist, "/cmd_vel", 10)
         self.current_node_index = 0
-        self.nodes = [(self.robot_initial_x, self.robot_initial_y), (8, 20), (9, 15)]
+        self.nodes = [(self.current_vehicle_x, self.current_vehicle_y), (8, 20), (9, 15)]
 
         self.timer_callback_called = False
 
@@ -37,13 +37,13 @@ class RobotControllerServer(Node):
         
     def get_marker_nodes_information_callback(self, msg):
         # grab information about the nodes when we the map and markers spawn
-        self.get_logger().info(f"info: {msg}")
+        # self.get_logger().info(f"info: {msg}")
         self.marker_nodes_information = msg.marker_nodes
         
-        nearest_node_idx = self.find_nearest_node((self.robot_initial_x,self.robot_initial_y), self.marker_nodes_information)
+        nearest_node_idx = self.find_nearest_node((self.current_vehicle_x,self.current_vehicle_y), self.marker_nodes_information)
         self.get_logger().info(f"nearest node is {nearest_node_idx}")
 
-        self.move_vehicle_bwt_two_nodes((self.robot_initial_x,self.robot_initial_y), 
+        self.move_vehicle_bwt_two_nodes((self.current_vehicle_x,self.current_vehicle_y), 
                                         (self.marker_nodes_information[nearest_node_idx].position_x, self.marker_nodes_information[nearest_node_idx].position_y))
     
     def find_nearest_node(self, point, sparse_nodes):
@@ -83,7 +83,7 @@ class RobotControllerServer(Node):
         
         # advancement
         time_to_advance = distance / self.constant_vehicle_velocity_x
-        self.advance_timer_ = self.create_timer(0.1 + time_to_rotate, lambda: self.advance_robot(distance, time_to_advance))
+        self.advance_timer_ = self.create_timer(0.1 + time_to_rotate, lambda: self.advance_robot(distance, time_to_advance, node2))
         
         # stopping
         self.create_timer(0.1 + time_to_rotate + time_to_advance, self.stop_robot)
@@ -93,15 +93,22 @@ class RobotControllerServer(Node):
         self.velocity_publisher_.publish(Twist(linear=Vector3(x=0.0, y=0.0, z=0.0),
                                              angular=Vector3(x=0.0, y=0.0, z=self.constant_vehicle_angular_z)))
         
+        # update old info
+        self.current_vehicle_orientation = (self.current_vehicle_orientation + angle) % 360
+        
         if self.rotate_timer_ is not None:
             self.rotate_timer_.cancel()
 
-    def advance_robot(self, distance, time):
+    def advance_robot(self, distance, time, new_node):
         self.get_logger().info(f"distance to travel: {distance}, time: {time}")
         
         msg = Twist()
         msg.linear.x = self.constant_vehicle_velocity_x
         self.velocity_publisher_.publish(msg)
+        
+        # update old info
+        self.current_vehicle_x = new_node[0]
+        self.current_vehicle_y = new_node[1]     
         
         if self.advance_timer_ is not None:
             self.advance_timer_.cancel()
@@ -109,7 +116,7 @@ class RobotControllerServer(Node):
     def stop_robot(self):
         self.velocity_publisher_.publish(Twist(linear=Vector3(x=0.0, y=0.0, z=0.0),
                                                 angular=Vector3(x=0.0, y=0.0, z=0.0)))
-        self.get_logger().info("Stopping the robot")
+        self.get_logger().info(f"Stopping the robot. Current position: ({self.current_vehicle_x},{self.current_vehicle_y}; Orientation: {self.current_vehicle_orientation})")
         self.current_node_index = (self.current_node_index + 1) 
         
         self.timer_callback_called = False

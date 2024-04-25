@@ -67,6 +67,38 @@ class RobotControllerServer(Node):
             self.get_logger().info("end of loop")
 
     def move_vehicle_bwt_two_nodes(self, node1, node2):
+        def rotate_vehicle(angle, time):
+            self.get_logger().info(f"angle to turn: {angle}, time: {time}")
+            self.velocity_publisher_.publish(Twist(linear=Vector3(x=0.0, y=0.0, z=0.0),
+                                                     angular=Vector3(x=0.0, y=0.0, z=self.constant_vehicle_angular_z)))
+            
+            # update old info
+            self.current_vehicle_orientation = (self.current_vehicle_orientation + angle) % 360
+            
+            if self.rotate_timer_ is not None:
+                self.rotate_timer_.cancel()
+
+        def advance_robot(distance, time, new_node):
+            self.get_logger().info(f"distance to travel: {distance}, time: {time}")
+            
+            self.velocity_publisher_.publish(Twist(linear=Vector3(x=self.constant_vehicle_velocity_x, y=0.0, z=0.0),
+                                                     angular=Vector3(x=0.0, y=0.0, z=0.0)))
+            
+            # update old info
+            self.current_vehicle_x = new_node[0]
+            self.current_vehicle_y = new_node[1]     
+            
+            if self.advance_timer_ is not None:
+                self.advance_timer_.cancel()
+
+        def stop_robot():
+            self.velocity_publisher_.publish(Twist(linear=Vector3(x=0.0, y=0.0, z=0.0),
+                                                    angular=Vector3(x=0.0, y=0.0, z=0.0)))
+            self.get_logger().info(f"Stopping the robot. Current position: ({self.current_vehicle_x},{self.current_vehicle_y}; Orientation: {self.current_vehicle_orientation})")
+            self.current_node_index = (self.current_node_index + 1) 
+            
+            self.timer_callback_called = False
+        
         x1, y1 = node1
         x2, y2 = node2
 
@@ -79,47 +111,14 @@ class RobotControllerServer(Node):
 
         # rotation
         time_to_rotate = abs(angle_rad / self.constant_vehicle_angular_z)
-        self.rotate_timer_ = self.create_timer(0.1, lambda: self.rotate_vehicle(angle, time_to_rotate))
+        self.rotate_timer_ = self.create_timer(0.1, lambda: rotate_vehicle(angle, time_to_rotate))
         
         # advancement
         time_to_advance = distance / self.constant_vehicle_velocity_x
-        self.advance_timer_ = self.create_timer(0.1 + time_to_rotate, lambda: self.advance_robot(distance, time_to_advance, node2))
+        self.advance_timer_ = self.create_timer(0.1 + time_to_rotate, lambda: advance_robot(distance, time_to_advance, node2))
         
         # stopping
-        self.create_timer(0.1 + time_to_rotate + time_to_advance, self.stop_robot)
-        
-    def rotate_vehicle(self, angle, time):
-        self.get_logger().info(f"angle to turn: {angle}, time: {time}")
-        self.velocity_publisher_.publish(Twist(linear=Vector3(x=0.0, y=0.0, z=0.0),
-                                             angular=Vector3(x=0.0, y=0.0, z=self.constant_vehicle_angular_z)))
-        
-        # update old info
-        self.current_vehicle_orientation = (self.current_vehicle_orientation + angle) % 360
-        
-        if self.rotate_timer_ is not None:
-            self.rotate_timer_.cancel()
-
-    def advance_robot(self, distance, time, new_node):
-        self.get_logger().info(f"distance to travel: {distance}, time: {time}")
-        
-        msg = Twist()
-        msg.linear.x = self.constant_vehicle_velocity_x
-        self.velocity_publisher_.publish(msg)
-        
-        # update old info
-        self.current_vehicle_x = new_node[0]
-        self.current_vehicle_y = new_node[1]     
-        
-        if self.advance_timer_ is not None:
-            self.advance_timer_.cancel()
-
-    def stop_robot(self):
-        self.velocity_publisher_.publish(Twist(linear=Vector3(x=0.0, y=0.0, z=0.0),
-                                                angular=Vector3(x=0.0, y=0.0, z=0.0)))
-        self.get_logger().info(f"Stopping the robot. Current position: ({self.current_vehicle_x},{self.current_vehicle_y}; Orientation: {self.current_vehicle_orientation})")
-        self.current_node_index = (self.current_node_index + 1) 
-        
-        self.timer_callback_called = False
+        self.create_timer(0.1 + time_to_rotate + time_to_advance, stop_robot)
 
 def main(args=None):
     rclpy.init(args=args)

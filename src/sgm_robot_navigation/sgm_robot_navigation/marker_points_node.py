@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 import rclpy
 from rclpy.node import Node
-from visualization_msgs.msg import Marker
+from visualization_msgs.msg import Marker, MarkerArray
 from nav_msgs.msg import OccupancyGrid
 from sgm_robot_interfaces.msg import MarkerNode, MapInformation
 from rclpy.qos import QoSProfile, QoSHistoryPolicy, QoSReliabilityPolicy, QoSDurabilityPolicy
 
+import time
 import numpy as np
 import cv2
 
@@ -25,13 +26,13 @@ class MarkerPointsNode(Node):
         self.distance_threshold = 0.4
                 
         self.nodes_information_ = {}
-        self.marker_visualisation_publisher_ = self.create_publisher(Marker, 'visualization_marker', 5)
+        self.marker_visualisation_publisher_ = self.create_publisher(MarkerArray, 'visualization_marker_array', 50)
         self.marker_information_publisher_ = self.create_publisher(MapInformation, 'sgm_map', 5)
         self.marker_timer_ = self.create_timer(1.0, self.init_marker_nodes) 
         
         self.map_qos_profile_ = QoSProfile(
             history=QoSHistoryPolicy.KEEP_LAST,
-            depth=10,
+            depth=50,
             reliability=QoSReliabilityPolicy.RELIABLE,
             durability=QoSDurabilityPolicy.TRANSIENT_LOCAL
         )
@@ -59,8 +60,8 @@ class MarkerPointsNode(Node):
         np.save('simplified_sgm/map_data.npy', self.map_data_)          
 
     def publish_markers_visualisation(self):
-        marker_msgs = []
-
+        marker_array = MarkerArray() 
+        
         for idx, info in self.nodes_information_.items():
             marker_msg = Marker()
             marker_msg.header.frame_id = 'map'
@@ -86,19 +87,19 @@ class MarkerPointsNode(Node):
             marker_msg.scale.y = 0.5
             marker_msg.scale.z = 0.5 
             
-            #color
+            # color
             marker_msg.color.a = 1.0
             marker_msg.color.r = 1.0
             marker_msg.color.g = 0.0
             marker_msg.color.b = 0.0
             
-            #lifetime
-            marker_msg.lifetime.sec = 10
+            # lifetime
+            marker_msg.lifetime.sec = 120
 
-            marker_msgs.append(marker_msg)
-
-        for marker_msg in marker_msgs:
-            self.marker_visualisation_publisher_.publish(marker_msg)
+            marker_array.markers.append(marker_msg)  # Add the marker to the MarkerArray
+        
+        self.marker_visualisation_publisher_.publish(marker_array)  # Publish the MarkerArray
+        self.marker_timer_.cancel()  # Cancel the timer
 
     def publish_markers_information(self):
         if len(self.nodes_information_) == 0:

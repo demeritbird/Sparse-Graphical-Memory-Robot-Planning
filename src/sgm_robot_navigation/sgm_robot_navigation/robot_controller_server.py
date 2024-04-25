@@ -26,10 +26,10 @@ class RobotControllerServer(Node):
 
         self.timer_callback_called = False
 
-        self.constant_vehicle_velocity_x = 0.5
-        self.constant_vehicle_angular_z = 0.5
+        self.constant_vehicle_velocity_x = 0.2
+        self.constant_vehicle_angular_z = 0.2
         self.current_vehicle_velocity_x = 0
-        self.current_vehicle_orientation = 270
+        self.current_vehicle_orientation = 0
         
         self.rotate_timer_ = None
         self.advance_timer_ = None
@@ -166,9 +166,6 @@ class RobotControllerServer(Node):
             self.velocity_publisher_.publish(Twist(linear=Vector3(x=0.0, y=0.0, z=0.0),
                                                      angular=Vector3(x=0.0, y=0.0, z=self.constant_vehicle_angular_z)))
             
-            # update old info
-            self.current_vehicle_orientation = (self.current_vehicle_orientation + angle) % 360
-            
             if self.rotate_timer_ is not None:
                 self.rotate_timer_.cancel()
 
@@ -178,9 +175,6 @@ class RobotControllerServer(Node):
             self.velocity_publisher_.publish(Twist(linear=Vector3(x=self.constant_vehicle_velocity_x, y=0.0, z=0.0),
                                                      angular=Vector3(x=0.0, y=0.0, z=0.0)))
             
-            # update old info
-            self.current_vehicle_x = new_node[0]
-            self.current_vehicle_y = new_node[1]     
             
             if self.advance_timer_ is not None:
                 self.advance_timer_.cancel()
@@ -200,17 +194,23 @@ class RobotControllerServer(Node):
             if self.current_node_index > 0:
                 self.timer_callback()
             
-        
         x1, y1 = node1
         x2, y2 = node2
 
         dx = x1 - x2
         dy = y1 - y2
 
-        angle = (math.degrees(math.atan2(dy, dx)) - self.current_vehicle_orientation + 360) % 360
+        angle = math.degrees(math.atan2(y2 - y1, x2 - x1)) - self.current_vehicle_orientation
+        angle = angle % 360
+
         distance = math.sqrt(dx**2 + dy**2)
         angle_rad = math.radians(angle)
 
+        # update old info
+        self.current_vehicle_orientation = (self.current_vehicle_orientation + angle) % 360
+        self.current_vehicle_x = x1 + distance * math.cos(math.radians(self.current_vehicle_orientation))
+        self.current_vehicle_y = y1 + distance * math.sin(math.radians(self.current_vehicle_orientation))
+    
         # rotation
         time_to_rotate = abs(angle_rad / self.constant_vehicle_angular_z)
         self.rotate_timer_ = self.create_timer(0.1, lambda: rotate_vehicle(angle, time_to_rotate))

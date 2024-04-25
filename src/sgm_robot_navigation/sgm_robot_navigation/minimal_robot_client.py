@@ -4,7 +4,7 @@ from rclpy.node import Node
 from sgm_robot_interfaces.action import RobotNavigate
 
 from rclpy.action import ActionClient
-from rclpy.action.client import ClientGoalHandle
+from rclpy.action.client import ClientGoalHandle, GoalStatus
 
  
  
@@ -38,6 +38,13 @@ class MinimalRobotClient(Node):
             self.get_logger().info("Goal was rejected...")	
                     
     def goal_result_callback(self, future):
+        
+        status = future.result().status
+        if status == GoalStatus.STATUS_SUCCEEDED:
+            self.get_logger().info("Goal Success")
+        elif status == GoalStatus.STATUS_ABORTED:
+            self.get_logger().error("Goal Aborted")
+        
         result = future.result().result
         self.get_logger().info(f"Result Node: {result.result_node}; Result Time; {result.time_taken}")
 

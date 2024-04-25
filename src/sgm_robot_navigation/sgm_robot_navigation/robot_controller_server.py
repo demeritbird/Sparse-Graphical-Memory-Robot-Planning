@@ -4,7 +4,7 @@ from geometry_msgs.msg import Twist, Vector3
 from sgm_robot_interfaces.action import RobotNavigate
 from sgm_robot_interfaces.msg import MarkerNode, MapInformation
 
-from rclpy.action import ActionServer
+from rclpy.action import ActionServer, GoalResponse
 from rclpy.action.server import ServerGoalHandle
 
 import math
@@ -43,8 +43,20 @@ class RobotControllerServer(Node):
             self, 
             RobotNavigate, 
             "robot_navigate", 
+            goal_callback=self.goal_callback,
             execute_callback=self.execute_callback)
-        
+
+    def goal_callback(self, goal_request: RobotNavigate.Goal):
+            self.get_logger().info("Received a goal!")
+            
+            # Validating the Goal Request -> must be within sparse-node range
+            if goal_request.target_node < 0 or goal_request.target_node > len(self.marker_nodes_information) - 1:
+                    self.get_logger().info("Rejecting the Goal")
+                    return GoalResponse.REJECT
+            
+            self.get_logger().info("Accepting the Goal")
+            return GoalResponse.ACCEPT
+     
     def execute_callback(self, goal_handle: ServerGoalHandle):
         target_node = goal_handle.request.target_node
         self.get_logger().info(f"New Goal Received! Target Node: {target_node}.")

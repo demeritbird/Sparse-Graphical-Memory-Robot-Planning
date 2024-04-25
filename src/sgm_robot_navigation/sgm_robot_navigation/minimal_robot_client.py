@@ -12,21 +12,23 @@ class MinimalRobotClient(Node):
     def __init__(self):
         super().__init__("minimal_robot_client")
         self.minimal_robot_client = ActionClient(self, RobotNavigate, "robot_navigate")
-        
+        self.request_timer_ = self.create_timer(30.0, lambda: self.send_goal(4))
         
     def send_goal(self, target_node):
-            # Wait for the Server
-            self.minimal_robot_client.wait_for_server()
-            
-            # Create a Goal
-            goal = RobotNavigate.Goal()
-            goal.target_node = target_node
-            
-            #Sending the Goal
-            self.get_logger().info("Sending the Goal from Action Client")
-            self.minimal_robot_client. \
-                send_goal_async(goal). \
-                add_done_callback(self.goal_response_callback)
+        # Wait for the Server
+        self.minimal_robot_client.wait_for_server()
+        
+        # Create a Goal
+        goal = RobotNavigate.Goal()
+        goal.target_node = target_node
+        
+        #Sending the Goal
+        self.get_logger().info("Sending the Goal from Action Client")
+        self.minimal_robot_client. \
+            send_goal_async(goal). \
+            add_done_callback(self.goal_response_callback)
+        
+        self.request_timer_.cancel()
             
     def goal_response_callback(self, future):
         # check if goal was accepted or not.
@@ -51,7 +53,6 @@ class MinimalRobotClient(Node):
 def main(args=None):
     rclpy.init(args=args)
     node = MinimalRobotClient()
-    node.send_goal(2)
     rclpy.spin(node)
     rclpy.shutdown()
  

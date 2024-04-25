@@ -6,6 +6,8 @@ from sgm_robot_interfaces.msg import MarkerNode, MapInformation
 
 from rclpy.action import ActionServer, GoalResponse
 from rclpy.action.server import ServerGoalHandle
+from rclpy.executors import MultiThreadedExecutor
+from rclpy.callback_groups import ReentrantCallbackGroup
 
 import math
 import numpy as np
@@ -17,18 +19,19 @@ class RobotControllerServer(Node):
         self.current_vehicle_y = 18.3  # TODO: get this dynamically
         self.get_logger().info("Robot Controller Server has started.")
         self.velocity_publisher_ = self.create_publisher(Twist, "/cmd_vel", 10)
-        self.current_node_index = 0
-        self.nodes = [(self.current_vehicle_x, self.current_vehicle_y), (8, 20), (9, 15)]
+        self.current_node_index = -1
+        self.nodes_to_travel = []
 
         self.timer_callback_called = False
 
-        self.constant_vehicle_velocity_x = 0.2
+        self.constant_vehicle_velocity_x = 0.5
         self.constant_vehicle_angular_z = 0.5
         self.current_vehicle_velocity_x = 0
         self.current_vehicle_orientation = 270
         
         self.rotate_timer_ = None
         self.advance_timer_ = None
+        self.stop_timer_ = None
         # self.velocity_timer_ = self.create_timer(0.5, self.timer_callback)
         
         self.marker_nodes_subscriber = self.create_subscription(
@@ -44,7 +47,9 @@ class RobotControllerServer(Node):
             RobotNavigate, 
             "robot_navigate", 
             goal_callback=self.goal_callback,
-            execute_callback=self.execute_callback)
+            execute_callback=self.execute_callback,
+            callback_group=ReentrantCallbackGroup())
+            # self.goal_handle_: ServerGoalHandle = None
 
     def goal_callback(self, goal_request: RobotNavigate.Goal):
             self.get_logger().info("Received a goal!")
@@ -61,7 +66,11 @@ class RobotControllerServer(Node):
         target_node = goal_handle.request.target_node
         self.get_logger().info(f"New Goal Received! Target Node: {target_node}.")
         
-        
+        self.timer_callback()
+
+        while True: #NOTE: potentially dangerous
+            if len(self.nodes_to_travel)== 0:
+                break
         
         goal_handle.succeed() # assume correct.
 
@@ -81,7 +90,7 @@ class RobotControllerServer(Node):
 
         self.move_vehicle_bwt_two_nodes((self.current_vehicle_x,self.current_vehicle_y), 
                                         (self.marker_nodes_information[nearest_node_idx].position_x, self.marker_nodes_information[nearest_node_idx].position_y))
-    
+
     def find_nearest_node(self, point, sparse_nodes):
         def calculate_euclidean_distance(node1, node2):
             return np.linalg.norm(node1 - node2)
@@ -96,11 +105,23 @@ class RobotControllerServer(Node):
         return nearest_node_idx
         
     def timer_callback(self):
-        if not self.timer_callback_called and self.current_node_index + 1 < len(self.nodes):
-            self.timer_callback_called = True
-            self.move_vehicle_bwt_two_nodes(self.nodes[self.current_node_index], self.nodes[(self.current_node_index + 1)])
-        elif self.current_node_index + 1 >= len(self.nodes):
+        #TODO:  find route to travel
+        self.nodes_to_travel = [(1,2), (3,5), (1,2), (3,5), (1,2), (3,5)]
+        if self.current_node_index == 2:
             self.get_logger().info("end of loop")
+            self.nodes_to_travel = []
+            self.current_node_index = 0
+            
+            return
+        
+        if not self.timer_callback_called and self.current_node_index + 1 < len(self.marker_nodes_information):
+            self.timer_callback_called = True
+            self.move_vehicle_bwt_two_nodes((self.marker_nodes_information[self.current_node_index].position_x, self.marker_nodes_information[self.current_node_index].position_y), 
+                                            (self.marker_nodes_information[self.current_node_index + 1].position_x, self.marker_nodes_information[self.current_node_index + 1].position_y))
+        elif self.current_node_index + 1 >= len(self.marker_nodes_information):
+            self.get_logger().info("end of loop")
+            self.nodes_to_travel = []
+            self.current_node_index = 0
 
     def move_vehicle_bwt_two_nodes(self, node1, node2):
         def rotate_vehicle(angle, time):
@@ -131,9 +152,17 @@ class RobotControllerServer(Node):
             self.velocity_publisher_.publish(Twist(linear=Vector3(x=0.0, y=0.0, z=0.0),
                                                     angular=Vector3(x=0.0, y=0.0, z=0.0)))
             self.get_logger().info(f"Stopping the robot. Current position: ({self.current_vehicle_x},{self.current_vehicle_y}; Orientation: {self.current_vehicle_orientation})")
-            self.current_node_index = (self.current_node_index + 1) 
             
             self.timer_callback_called = False
+            
+            if self.stop_timer_ is not None:
+                self.stop_timer_.cancel()
+                
+            self.current_node_index += 1
+            
+            if self.current_node_index > 0:
+                self.timer_callback()
+            
         
         x1, y1 = node1
         x2, y2 = node2
@@ -154,12 +183,12 @@ class RobotControllerServer(Node):
         self.advance_timer_ = self.create_timer(0.1 + time_to_rotate, lambda: advance_robot(distance, time_to_advance, node2))
         
         # stopping
-        self.create_timer(0.1 + time_to_rotate + time_to_advance, stop_robot)
+        self.stop_timer_ = self.create_timer(0.1 + time_to_rotate + time_to_advance, stop_robot)
 
 def main(args=None):
     rclpy.init(args=args)
     node = RobotControllerServer()
-    rclpy.spin(node)
+    rclpy.spin(node, MultiThreadedExecutor())
     rclpy.shutdown()
 
 if __name__ == "__main__":

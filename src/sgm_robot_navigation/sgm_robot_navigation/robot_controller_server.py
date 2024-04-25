@@ -1,7 +1,11 @@
 import rclpy
 from rclpy.node import Node
 from geometry_msgs.msg import Twist, Vector3
+from sgm_robot_interfaces.action import RobotNavigate
 from sgm_robot_interfaces.msg import MarkerNode, MapInformation
+
+from rclpy.action import ActionServer
+from rclpy.action.server import ServerGoalHandle
 
 import math
 import numpy as np
@@ -35,6 +39,26 @@ class RobotControllerServer(Node):
         )
         self.marker_nodes_information = []
         
+        self.count_until_server = ActionServer(
+            self, 
+            RobotNavigate, 
+            "robot_navigate", 
+            execute_callback=self.execute_callback)
+        
+    def execute_callback(self, goal_handle: ServerGoalHandle):
+        target_node = goal_handle.request.target_node
+        self.get_logger().info(f"New Goal Received! Target Node: {target_node}.")
+        
+        
+        
+        goal_handle.succeed() # assume correct.
+
+        result = RobotNavigate.Result()
+        
+        result.result_node = target_node # TODO: check
+        result.time_taken = 0.0
+        return result
+
     def get_marker_nodes_information_callback(self, msg):
         # grab information about the nodes when we the map and markers spawn
         # self.get_logger().info(f"info: {msg}")

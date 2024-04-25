@@ -3,6 +3,7 @@ import rclpy
 from rclpy.node import Node
 from visualization_msgs.msg import Marker
 from nav_msgs.msg import OccupancyGrid
+from sgm_robot_interfaces.msg import MarkerNode, MarkerNodeArray
 from rclpy.qos import QoSProfile, QoSHistoryPolicy, QoSReliabilityPolicy, QoSDurabilityPolicy
 
 import numpy as np
@@ -24,7 +25,8 @@ class MarkerPointsNode(Node):
         self.distance_threshold = 0.4
                 
         self.nodes_information_ = {}
-        self.marker_publisher_ = self.create_publisher(Marker, 'visualization_marker', 5)
+        self.marker_visualisation_publisher_ = self.create_publisher(Marker, 'visualization_marker', 5)
+        self.marker_information_publisher_ = self.create_publisher(MarkerNodeArray, 'marker_nodes', 5)
         self.marker_timer_ = self.create_timer(1.0, self.init_marker_nodes) 
         
         self.map_qos_profile_ = QoSProfile(
@@ -56,7 +58,7 @@ class MarkerPointsNode(Node):
         cv2.imwrite('output/occupancy_grid_map.png', map_image)
         np.save('simplified_sgm/map_data.npy', self.map_data_)          
 
-    def publish_markers(self):
+    def publish_markers_visualisation(self):
         marker_msgs = []
 
         for idx, info in self.nodes_information_.items():
@@ -98,7 +100,25 @@ class MarkerPointsNode(Node):
             marker_msgs.append(marker_msg)
 
         for marker_msg in marker_msgs:
-            self.marker_publisher_.publish(marker_msg)
+            self.marker_visualisation_publisher_.publish(marker_msg)
+
+    def publish_markers_information(self):
+        if len(self.nodes_information_) == 0:
+            self.get_logger().warn("No node information to publish!")
+            return
+
+        # there is node information, i want to publish it out there
+        marker_node_array = MarkerNodeArray()
+        for idx, info in self.nodes_information_.items():
+            node_info = MarkerNode(index=idx, 
+                                   position_x = info['position'][0] * self.map_width_ * self.map_resolution_,
+                                   position_y = info['position'][1] * self.map_height_ * self.map_resolution_,
+                                   connected_nodes = (info.get('connected_nodes_green', []) + info.get('connected_nodes_orange', [])))
+                         
+            marker_node_array.marker_nodes.append(node_info)
+
+        self.get_logger().info("Publishing node information to be captured...")
+        self.marker_information_publisher_.publish(marker_node_array)
 
     def init_marker_nodes(self):
         def calculate_euclidean_distance(node1, node2):
@@ -254,11 +274,15 @@ class MarkerPointsNode(Node):
         self.nodes_information_ = draw_lines(sparse_nodes, self.map_data_, self.distance_threshold, self.map_width_, self.map_height_)
 
         # now we have the sparse information, we want to publish them onto the map topic.
-        self.publish_markers()
+        self.publish_markers_visualisation()
+        
+        self.publish_markers_information()
         # DEBUG: just to see information
         # for idx, info in self.nodes_information_.items():
         #     self.get_logger().info(f"Sparse Node {idx}: Position: ({round(info['position'][0] * self.map_width_, 2)}, {round(info['position'][1] * self.map_height_, 2)}), Connected Nodes (Green): {info.get('connected_nodes_green', [])}, Connected Node (Orange): {info.get('connected_node_orange', [])}")
-        self.marker_timer_.cancel()  
+        self.marker_timer_.cancel() 
+        
+         
 
 def main(args=None):
     rclpy.init(args=args)

@@ -1,7 +1,23 @@
-# Sparse-Graphical-Memory-Robot-Planning
+# Sparse-Graphical-Memory-Robot-Planning-Simple-Implementation
+
 This project was done on Python 3.10.12, ROS2 Humble with Gazebo, Ubuntu 22.04. This README assumes that the user already has this setup.
 
 Detailed information of the project can be found in the /report folder.
+
+This project is a simple implementation of 'Sparse Graphical Memory for Robust Planning', all credits in the algorithm design related to SGM goes to them. [You may view their findings here.](https://paperswithcode.com/paper/sparse-graphical-memory-for-robust-planning)
+
+```
+@inproceedings{emmons2020sparse,
+Author = {Emmons, Scott and Jain, Ajay and
+Laskin, Michael and Kurutach, Thanard
+and Abbeel, Pieter and Pathak, Deepak},
+Title = {Sparse Graphical Memory
+for Robust Planning},
+Booktitle = {Neural Information Processing
+Systems},
+Year = {2020}
+}
+```
 
 ## Setup
 ### Python Requirements Installation
@@ -10,24 +26,25 @@ The required python modules are listed in the requirements.txt file. You can ins
 ### ROS2 Requirements Installation
 You will need to run a few command lines and instructions to install the necessary components.
 1.  Run `sudo apt install ros-humble-navigation2 ros-humble-nav2-bringup ros-humble-turtlebot3*` and `sudo apt install ros-humble-rmw-cyclonedds-cpp`
-2. Add the lines `export TURTLEBOT3_MODEL=waffle` and
-`export RMW_IMPLEMENTATION=rmw_cyclonedds_cpp` to the end of your ~/.bashrc.
-3. Run `sudo nano /opt/ros/humble/share/turtlebot3_navigation2/param/waffle.yaml` and change one of the parameter 'robot_model_type' value to 'nav2_amcl::DifferentialMotionModel'
-4. Run `sudo apt install ros-humble-slam-toolbox`
+2.  Add the lines `export TURTLEBOT3_MODEL=waffle` and
+    `export RMW_IMPLEMENTATION=rmw_cyclonedds_cpp` to the end of your ~/.bashrc.
+3.  Run `sudo nano /opt/ros/humble/share/turtlebot3_navigation2/param/waffle.yaml` and change one of the parameter 'robot_model_type' value to 'nav2_amcl::DifferentialMotionModel'
+4.  Run `sudo apt install ros-humble-slam-toolbox`
 
 ## Startup
-Run the following three commands in different terminals. 
-1.  `ros2 launch sgm_robot_bringup sgm_robot_gazebo.launch.xml`
-  - This will open the Gazebo and RViz showing the robot. 
-2.  `ros2 launch turtlebot3_navigation2 navigation2.launch.py use_sim_time:=True map:=src/sgm_robot_bringup/maps/standard_sgm_map_resized.yaml`
-  - This will open the RViz showing the interactable map.
-  - On the left side of the interface, add in a "MarkerArray" that topic is listenting to `visualization_marker`
-  - You may also want to select "Set 2D Point Estimate" as well as its orientation to get a general idea of where the robot is on the map while it is moving later. 
-3.  `ros2 launch sgm_robot_bringup sgm_robot_navigation.launch.xml`
-  - This will run the overall code of the program.
-  - This will also launch a ROS client that sends a goal automatically after 2 mins.
-4. At any point now, you may send a goal with `ros2 action send_goal /robot_navigate sgm_robot_interfaces/action/RobotNavigate "{target_node: p}`. Replace `p` with an integer that is the node index to send the robot to.
+First, you will need to build with `colcon build`.
 
+Then, run the following three commands in different terminals.
+1.  `ros2 launch sgm_robot_bringup sgm_robot_gazebo.launch.xml`
+- This will open the Gazebo and RViz showing the robot.
+2.  `ros2 launch turtlebot3_navigation2 navigation2.launch.py use_sim_time:=True map:=src/sgm_robot_bringup/maps/standard_sgm_map_resized.yaml`
+- This will open the RViz showing the interactable map.
+- On the left side of the interface, add in a "MarkerArray" that topic is listenting to `visualization_marker`
+- You may also want to select "Set 2D Point Estimate" as well as its orientation to get a general idea of where the robot is on the map while it is moving later.
+3.  `ros2 launch sgm_robot_bringup sgm_robot_navigation.launch.xml`
+- This will run the overall code of the program.
+- This will also launch a ROS client that sends a goal automatically after 2 mins.
+4. At any point now, you may send a goal with `ros2 action send_goal /robot_navigate sgm_robot_interfaces/action/RobotNavigate "{target_node: p}`. Replace `p` with an integer that is the node index to send the robot to.
 
 ## Result
 ![](/assets/result.gif)

@@ -27,3 +27,7 @@ Run the following three commands in different terminals.
   - This will run the overall code of the program.
   - This will also launch a ROS client that sends a goal automatically after 2 mins.
 4. At any point now, you may send a goal with `ros2 action send_goal /robot_navigate sgm_robot_interfaces/action/RobotNavigate "{target_node: p}`. Replace `p` with an integer that is the node index to send the robot to.
+
+
+## Result
+![](/assets/result.gif)

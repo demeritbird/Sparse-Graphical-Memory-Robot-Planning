@@ -8,6 +8,7 @@ from rclpy.action import ActionServer, GoalResponse
 from rclpy.action.server import ServerGoalHandle
 from rclpy.executors import MultiThreadedExecutor
 from rclpy.callback_groups import ReentrantCallbackGroup
+import threading
 
 import math
 import numpy as np
@@ -25,6 +26,7 @@ class RobotControllerServer(Node):
         self.nodes_to_travel = []
 
         self.timer_callback_called = False
+        self.robot_ready = False
 
         self.constant_vehicle_velocity_x = 0.2
         self.constant_vehicle_angular_z = 0.2
@@ -51,10 +53,17 @@ class RobotControllerServer(Node):
             goal_callback=self.goal_callback,
             execute_callback=self.execute_callback,
             callback_group=ReentrantCallbackGroup())
-            # self.goal_handle_: ServerGoalHandle = None
+        self.goal_handle_: ServerGoalHandle = None
+        self.goal_lock_ = threading.Lock()
 
     def goal_callback(self, goal_request: RobotNavigate.Goal):
             self.get_logger().info("Received a goal!")
+            
+            # goal policy: refuse new goal if Current Goal is still Active
+            with self.goal_lock_:
+                if (self.goal_handle_ is not None and self.goal_handle_.is_active) or not self.robot_ready:
+                    self.get_logger().info("Robot is currently in operation! Rejecting new goal...")
+                    return GoalResponse.REJECT
             
             # Validating the Goal Request -> must be within sparse-node range
             if goal_request.target_node < 0 or goal_request.target_node > len(self.marker_nodes_information) - 1:
@@ -78,6 +87,8 @@ class RobotControllerServer(Node):
             return GoalResponse.ACCEPT
      
     def execute_callback(self, goal_handle: ServerGoalHandle):
+        with self.goal_lock_: 
+            self.goal_handle_ = goal_handle
         target_node = goal_handle.request.target_node
         self.get_logger().info(f"New Goal Received! Target Node: {target_node}.")
         
@@ -119,6 +130,7 @@ class RobotControllerServer(Node):
         self.move_vehicle_bwt_two_nodes((self.current_vehicle_x,self.current_vehicle_y), 
                                         (self.marker_nodes_information[nearest_node_idx].position_x, self.marker_nodes_information[nearest_node_idx].position_y))
         self.current_vehicle_node = nearest_node_idx
+
 
     # FIXME: this should done in marker_points_node as a server? 
     def get_path_of_nodes_to_travel(self, starting_node_idx, target_node_idx):
@@ -206,6 +218,7 @@ class RobotControllerServer(Node):
             
             if self.current_node_index > 0:
                 self.timer_callback()
+            self.robot_ready = True
             
         x1, y1 = node1
         x2, y2 = node2

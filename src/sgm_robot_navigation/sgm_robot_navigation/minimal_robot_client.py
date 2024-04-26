@@ -25,7 +25,7 @@ class MinimalRobotClient(Node):
         #Sending the Goal
         self.get_logger().info("Sending the Goal from Action Client")
         self.minimal_robot_client. \
-            send_goal_async(goal). \
+            send_goal_async(goal,  feedback_callback= self.goal_feedback_callback). \
             add_done_callback(self.goal_response_callback)
         
         self.request_timer_.cancel()
@@ -49,6 +49,13 @@ class MinimalRobotClient(Node):
         
         result = future.result().result
         self.get_logger().info(f"Result Node: {result.result_node}; Result Time; {result.time_taken}")
+
+    def goal_feedback_callback(self, feedback_msg):
+        outgoing_node_x = feedback_msg.feedback.outgoing_node_x
+        outgoing_node_y = feedback_msg.feedback.outgoing_node_y
+        incoming_node_x = feedback_msg.feedback.incoming_node_x
+        incoming_node_y = feedback_msg.feedback.outgoing_node_y
+        self.get_logger().info(f"Client Feedback: outgoing_node_x: {outgoing_node_x}, outgoing_node_y: {outgoing_node_y}, incoming_node_x: {incoming_node_x}, incoming_node_y: {incoming_node_y}, ")
 
 def main(args=None):
     rclpy.init(args=args)

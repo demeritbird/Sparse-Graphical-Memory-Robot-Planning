@@ -6,5 +6,7 @@ int64 result_node
 float64 time_taken
 ---
 # Feedback
-int64 outgoing_node
-int64 incoming_node
+float64 outgoing_node_x
+float64 outgoing_node_y
+float64 incoming_node_x
+float64 incoming_node_y

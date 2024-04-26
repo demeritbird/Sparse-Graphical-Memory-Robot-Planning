@@ -82,8 +82,21 @@ class RobotControllerServer(Node):
         self.get_logger().info(f"New Goal Received! Target Node: {target_node}.")
         
         self.timer_callback()
+        
+        current_feedback_index = -1
+        feedback = RobotNavigate.Feedback()
 
         while True: #NOTE: potentially dangerous
+            if current_feedback_index != self.current_node_index and len(self.nodes_to_travel) > 0:
+                current_feedback_index = self.current_node_index - 1
+                
+                feedback.outgoing_node_x = self.nodes_to_travel[self.current_node_index-1].position_x
+                feedback.outgoing_node_y = self.nodes_to_travel[self.current_node_index-1].position_y
+                feedback.incoming_node_x = self.nodes_to_travel[self.current_node_index].position_x
+                feedback.incoming_node_y = self.nodes_to_travel[self.current_node_index].position_y      
+            
+                goal_handle.publish_feedback(feedback)
+            
             if len(self.nodes_to_travel)== 0:
                 break
         

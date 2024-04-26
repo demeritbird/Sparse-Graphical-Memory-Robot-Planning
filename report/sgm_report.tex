@@ -11,7 +11,7 @@
     T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
 \begin{document}
 
-\title{Implementation of Sparse Graphical Memory for Robust Planning}
+\title{Implementation of Sparse Graphical Memory for Robust Planning in Robotics}
 
 \author{\IEEEauthorblockN{Jie Wei Lek}
   \IEEEauthorblockA{\textit{CSD} \\
@@ -22,10 +22,22 @@
 
 \maketitle
 
+\begin{abstract}
+  Sparse Graphical Memory presents itself as a promising approach for robust planning not only in theory, but also in implementation in the field of robotics. It offers a middle ground between deep learning and classical planning techniques. By implementing SGM in robotics, we can see if this approach is feasible in nvaigation.\end{abstract}
+
 \section{Introduction}
 This document shall serve the purpose of detailing the author's simplified implementation of the Sparse Graphical Memory for Robust Planning in Robotics Operating System 2 (ROS2), and will be used for Singapore University of Technologty and Design (SUTD) Mobile Robotics Individual Project.
 
+\section{Related Work}
 This project takes inspiration from \href{https://paperswithcode.com/paper/sparse-graphical-memory-for-robust-planning}{'Sparse Graphical Memory for Robust Planning'} by Scott Emmons, Ajay Jain, Michael Laskin, Thanard Kurutach, Pieter Abbeel and Deepak Pathak.
+
+While our implementation primarily focuses on adapting SGM fundamentals within the context of ROS2 and Gazebo simulation, the concepts and insights provided by Emmons et al. serve as a guiding framework for my work.
+
+\section{Motivations}
+My motivations for implementation was to create my own robotics project using skills that I have learnt. By doing so, I can gain better insight on how robotic systems work.
+
+\section{Contributions}
+All credits for the sparcity and long horizon goals algorithm go to Emmons et al. In this project, I mainly focused on the implementation of SGM in ROS2 from scratch.
 
 \section{Introduction to Sparse Graphical Memory (SGM)}
 
@@ -72,7 +84,7 @@ In essence, we can achieve the main two goals of SGM with:
 \end{enumerate}
 
 \subsection{Overall Project Architecture}
-The project was created on ROS2 Humble on WSL2 Ubuntu 22.04.
+The project was created on Python 3.10.13, ROS2 Humble on WSL2 Ubuntu 22.04.
 The ROS2 workspace primary consists of 4 nodes:
 \begin{enumerate}
   \item Robot description --- show robot's design
@@ -160,6 +172,9 @@ During the development process, the robot demonstrated the ability to correctly 
 However, given factors such as lags in computer processing and possibly vehicle friction, deviations occur in the rotation and advancement of the robot which compounded if the entire journey was long.
 
 Additionally, while the navigation system effectively utilized the SGM representation for path planning, certain features and optimizations of SGM were not fully implemented, given time constraints. This includes improvements towards the memory construction of the robot between different state transitions dynamically to provide increased robustness of the robot, or unimplemented plugins that could error handle much effectively.
+
+\section{Conclusion}
+In conclusion, my implementation demonstrates the feasibility and effectiveness of SGM for robust planning in robotics within the ROS2 framework, even when only using its fundamental features. By integrating SGM principles into autonomous navigation, it is possible to improve future works in the field of robotics.
 
 \begin{thebibliography}{00}
   \bibitem{b1} Emmons, Scott and Jain, Ajay and   Laskin, Michael and Kurutach, Thanard   and Abbeel, Pieter and Pathak, Deepak, Neural Information Processing Systems, Sparse Graphical Memory for Robust Planning. 2020.

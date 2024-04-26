@@ -25,6 +25,8 @@
 \section{Introduction}
 This document shall serve the purpose of detailing the author's simplified implementation of the Sparse Graphical Memory for Robust Planning in Robotics Operating System 2 (ROS2), and will be used for Singapore University of Technologty and Design (SUTD) Mobile Robotics Individual Project.
 
+This project takes inspiration from \href{https://paperswithcode.com/paper/sparse-graphical-memory-for-robust-planning}{'Sparse Graphical Memory for Robust Planning'} by Scott Emmons, Ajay Jain, Michael Laskin, Thanard Kurutach, Pieter Abbeel and Deepak Pathak.
+
 \section{Introduction to Sparse Graphical Memory (SGM)}
 
 Currently there are two conventional approaches to reninforcement learning agents. (1) Deep Learning --- this method is good at learning from examples but does not scale with long-horizon tasks. (2) Classical Planning --- this method plans ahead in long-horizon tasks but fails to presume state space is generalised without raw sensory input.
@@ -62,6 +64,12 @@ The implementation shall be able to acheive the following.
 
 \section{Implementation}
 You may view the project's implementation source code \href{https://github.com/demeritbird/Sparse-Graphical-Memory-Robot-Planning}{here}. Detailed explanation on its installation and startup can also be found in there.
+
+In essence, we can achieve the main two goals of SGM with:
+\begin{enumerate}
+  \item Sparsity --- Implementation in code, by merging points in grid with TWC.
+  \item Long Horizon Goals --- Movement of robots through different waypoints in the map.
+\end{enumerate}
 
 \subsection{Overall Project Architecture}
 The project was created on ROS2 Humble on WSL2 Ubuntu 22.04.
@@ -133,7 +141,7 @@ In the implemented code, there are two major nodes for robot movement and naviga
 This ROS node subscribes and collects information about the map, processes the node mentioned earlier to get the sparse nodes and feasible edges, before publishes this new sparse node information to the RViz Visualisation as well as \textit{robot\_controller\_server}.
 
 \subsubsection{robot\_controller\_server}
-This ROS node is a multi-threaded ROS Action Server that first localises the robot in the map and moves it to the nearest available node for intialisation. It listens for future goals of new target sparse nodes to travel to, calculates the fastest way to get there through edges, and translates this information into commands for the robot to perform. These commands come in the form of the robot first rotating anti-clockwise to face its destination sparse node, then moving a linear distance, and stopping at its destination.
+This ROS node is a multi-threaded ROS Action Server that first localises the robot in the map and moves it to the nearest available node for initialisation. It listens for future goals of new target sparse nodes to travel to, calculates the fastest way to get there through edges, and translates this information into commands for the robot to perform. These commands come in the form of the robot first rotating anti-clockwise to face its destination sparse node, then moving a linear distance, and stopping at its different waypoints.
 
 With these commands, the robot will then move from node to node to its destination node. In this implementation, since SGM is lenient on the navigation algorithm, I used the Breadth-First Search algorithm (BFS).
 

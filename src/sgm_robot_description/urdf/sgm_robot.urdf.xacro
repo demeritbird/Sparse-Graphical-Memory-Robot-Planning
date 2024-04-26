@@ -191,14 +191,10 @@
 
     <gazebo reference="right_wheel_link">
         <material>Gazebo/Grey</material>
-        <mu1 value="0.0"/>
-        <mu2 value="0.0"/>
     </gazebo>
 
     <gazebo reference="left_wheel_link">
         <material>Gazebo/Grey</material>
-        <mu1 value="0.0"/>
-        <mu2 value="0.0"/>
     </gazebo>
 
     <gazebo reference="caster_wheel_link">
